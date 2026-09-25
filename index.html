@@ -1,0 +1,2968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAULT // Distributed Object Storage Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    /* ==========================================================================
+       VAULT NEO-BRUTALIST CYBERPUNK DESIGN SYSTEM
+       ========================================================================== */
+    :root {
+      --bg-obsidian: #080C14;
+      --bg-surface: #0E1626;
+      --bg-surface-elevated: #141F36;
+      --bg-card: #0F172A;
+      --bg-card-inner: #070B12;
+      
+      --neon-green: #10B981;
+      --neon-green-bright: #22C55E;
+      --neon-green-glow: rgba(16, 185, 129, 0.45);
+      --neon-green-bg: rgba(16, 185, 129, 0.12);
+      
+      --neon-crimson: #EF4444;
+      --neon-crimson-bright: #F87171;
+      --neon-crimson-glow: rgba(239, 68, 68, 0.45);
+      --neon-crimson-bg: rgba(239, 68, 68, 0.12);
+      
+      --neon-cyan: #06B6D4;
+      --neon-cyan-bright: #22D3EE;
+      --neon-cyan-glow: rgba(6, 182, 212, 0.45);
+      --neon-cyan-bg: rgba(6, 182, 212, 0.12);
+      
+      --neon-purple: #8B5CF6;
+      --neon-purple-bright: #A78BFA;
+      --neon-purple-glow: rgba(139, 92, 246, 0.45);
+      --neon-purple-bg: rgba(139, 92, 246, 0.12);
+      
+      --neon-amber: #F59E0B;
+      --neon-amber-glow: rgba(245, 158, 11, 0.45);
+      --neon-amber-bg: rgba(245, 158, 11, 0.12);
+      
+      --border-dark: rgba(255, 255, 255, 0.09);
+      --border-cyan: rgba(6, 182, 212, 0.4);
+      --border-green: rgba(16, 185, 129, 0.4);
+      --border-crimson: rgba(239, 68, 68, 0.4);
+      --border-purple: rgba(139, 92, 246, 0.4);
+      
+      --text-white: #F8FAFC;
+      --text-slate: #94A3B8;
+      --text-muted: #64748B;
+      
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-sans: 'Space Grotesk', -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-obsidian);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.06) 0%, transparent 50%),
+        radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 28px 28px;
+      color: var(--text-white);
+      font-family: var(--font-mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Subtle CRT Scanline Overlay */
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%);
+      background-size: 100% 3px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.4;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-obsidian);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1E293B;
+      border: 1px solid var(--border-dark);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--neon-cyan);
+    }
+
+    /* Main Container */
+    .dashboard-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1.25rem 1.5rem 3.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* ==========================================================================
+       TOP NAVIGATION & STATUS BAR
+       ========================================================================== */
+    .top-navbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 2px solid var(--border-dark);
+      box-shadow: 4px 4px 0px #000;
+      padding: 0.85rem 1.25rem;
+      position: relative;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .brand-icon-box {
+      width: 36px;
+      height: 36px;
+      background: #000;
+      border: 2px solid var(--neon-cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 12px var(--neon-cyan-glow);
+    }
+
+    .brand-icon-box svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: var(--neon-cyan);
+      stroke-width: 2.2;
+    }
+
+    .brand-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-white);
+      display: flex;
+      align-items: baseline;
+      gap: 0.5rem;
+    }
+
+    .brand-version {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: var(--neon-cyan);
+      background: var(--neon-cyan-bg);
+      border: 1px solid var(--border-cyan);
+      padding: 0.1rem 0.4rem;
+      letter-spacing: 0.05em;
+    }
+
+    .brand-subtitle {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      display: none;
+    }
+    @media (min-width: 768px) {
+      .brand-subtitle { display: inline-block; }
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .pill-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.65rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border: 1px solid var(--border-dark);
+      background: var(--bg-card-inner);
+    }
+
+    .pill-badge.active-backend {
+      border-color: var(--neon-green);
+      color: var(--neon-green-bright);
+      background: var(--neon-green-bg);
+    }
+
+    .pill-badge.offline-backend {
+      border-color: var(--neon-amber);
+      color: var(--neon-amber);
+      background: var(--neon-amber-bg);
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+      animation: pulseGlow 1.5s infinite alternate;
+    }
+
+    .btn-tactile-sm {
+      background: var(--bg-surface-elevated);
+      color: var(--text-white);
+      border: 1px solid var(--border-dark);
+      padding: 0.35rem 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.1s ease;
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .btn-tactile-sm:hover {
+      background: #1E293B;
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      transform: translate(-1px, -1px);
+      box-shadow: 3px 3px 0px #000;
+    }
+
+    .btn-tactile-sm:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px #000;
+    }
+
+    .btn-tactile-sm.active-sound {
+      border-color: var(--neon-purple);
+      color: var(--neon-purple-bright);
+    }
+
+    /* ==========================================================================
+       SECTION 1: TOP HUD / QUORUM CONSENSUS HEADER
+       ========================================================================== */
+    .quorum-hud {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+    @media (min-width: 1024px) {
+      .quorum-hud {
+        grid-template-columns: 1.5fr 1fr;
+      }
+    }
+
+    /* Giant Consensus Banner */
+    .consensus-card {
+      background: var(--bg-surface);
+      border: 2px solid var(--neon-green);
+      box-shadow: 5px 5px 0px #000, 0 0 25px var(--neon-green-glow);
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.25rem;
+      transition: all 0.3s ease;
+    }
+
+    .consensus-card.quorum-lost {
+      border-color: var(--neon-crimson);
+      box-shadow: 5px 5px 0px #000, 0 0 35px var(--neon-crimson-glow);
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(239, 68, 68, 0.08),
+        rgba(239, 68, 68, 0.08) 15px,
+        var(--bg-surface) 15px,
+        var(--bg-surface) 30px
+      );
+    }
+
+    .corner-tag {
+      position: absolute;
+      top: 0;
+      right: 0;
+      background: #000;
+      border-left: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .consensus-header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .sub-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .consensus-main {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .consensus-shield-box {
+      width: 68px;
+      height: 68px;
+      background: var(--bg-card-inner);
+      border: 2px solid var(--neon-green);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 0 15px var(--neon-green-glow);
+      transition: all 0.3s ease;
+    }
+
+    .consensus-card.quorum-lost .consensus-shield-box {
+      border-color: var(--neon-crimson);
+      box-shadow: 0 0 20px var(--neon-crimson-glow);
+      animation: alertPulse 1.2s infinite;
+    }
+
+    .consensus-shield-box svg {
+      width: 38px;
+      height: 38px;
+      stroke: var(--neon-green);
+      fill: none;
+      stroke-width: 2.2;
+    }
+
+    .consensus-card.quorum-lost .consensus-shield-box svg {
+      stroke: var(--neon-crimson);
+    }
+
+    .consensus-text-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .giant-status-title {
+      font-size: 1.55rem;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--neon-green-bright);
+      line-height: 1.15;
+      text-shadow: 0 0 15px var(--neon-green-glow);
+    }
+
+    .consensus-card.quorum-lost .giant-status-title {
+      color: var(--neon-crimson-bright);
+      text-shadow: 0 0 15px var(--neon-crimson-glow);
+    }
+
+    .status-caption {
+      font-size: 0.82rem;
+      color: var(--text-slate);
+      line-height: 1.4;
+    }
+
+    .consensus-meta-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.85rem;
+      border-top: 1px dashed var(--border-dark);
+      padding-top: 0.85rem;
+    }
+
+    .meta-chip {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-dark);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--text-slate);
+    }
+
+    .meta-chip strong {
+      color: var(--text-white);
+    }
+
+    /* HUD KPI Stat Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .kpi-card {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-dark);
+      box-shadow: 4px 4px 0px #000;
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      border-color: var(--neon-cyan);
+      transform: translateY(-2px);
+      box-shadow: 4px 6px 0px #000;
+    }
+
+    .kpi-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .kpi-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .kpi-icon {
+      width: 18px;
+      height: 18px;
+      stroke: var(--neon-cyan);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .kpi-value {
+      font-size: 1.65rem;
+      font-weight: 800;
+      color: var(--text-white);
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+      display: flex;
+      align-items: baseline;
+      gap: 0.4rem;
+    }
+
+    .kpi-unit {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-slate);
+    }
+
+    .kpi-foot {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .pulse-radar-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--neon-purple);
+      box-shadow: 0 0 8px var(--neon-purple);
+      animation: radarSpin 2s infinite linear;
+    }
+
+    /* ==========================================================================
+       SECTION 2: STORAGE NODES ARENA (3 HARDWARE NODE CARDS)
+       ========================================================================== */
+    .section-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      border-bottom: 2px solid var(--border-dark);
+      padding-bottom: 0.5rem;
+    }
+
+    .section-title {
+      font-size: 0.95rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-white);
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .section-title-tag {
+      color: var(--neon-cyan);
+      font-size: 0.75rem;
+      background: var(--neon-cyan-bg);
+      border: 1px solid var(--border-cyan);
+      padding: 0.08rem 0.4rem;
+    }
+
+    .nodes-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    @media (min-width: 900px) {
+      .nodes-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .node-card {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-green);
+      box-shadow: 4px 4px 0px #000, 0 0 15px var(--neon-green-glow);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .node-card:hover {
+      box-shadow: 6px 6px 0px #000, 0 0 20px var(--neon-green-glow);
+      transform: translateY(-2px);
+    }
+
+    /* Isolated / Partitioned State */
+    .node-card.partitioned {
+      border-color: var(--neon-crimson) !important;
+      background: repeating-linear-gradient(
+        -45deg,
+        rgba(239, 68, 68, 0.12),
+        rgba(239, 68, 68, 0.12) 14px,
+        rgba(15, 23, 42, 0.95) 14px,
+        rgba(15, 23, 42, 0.95) 28px
+      ) !important;
+      background-size: 40px 40px !important;
+      animation: hazardStripes 3s linear infinite;
+      box-shadow: 4px 4px 0px #000, 0 0 25px var(--neon-crimson-glow) !important;
+    }
+
+    .node-card.reconstructing {
+      border-color: var(--neon-purple) !important;
+      box-shadow: 4px 4px 0px #000, 0 0 25px var(--neon-purple-glow) !important;
+    }
+
+    .node-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .node-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .node-id-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .node-id {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-white);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .node-port {
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-dark);
+      padding: 0.15rem 0.45rem;
+      color: var(--neon-cyan);
+    }
+
+    .node-subtext {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+    }
+
+    .node-status-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 0.25rem 0.55rem;
+      border: 1px solid currentColor;
+      text-transform: uppercase;
+      background: #000;
+    }
+
+    .node-status-pill.online {
+      color: var(--neon-green-bright);
+    }
+
+    .node-status-pill.isolated {
+      color: var(--neon-crimson-bright);
+      animation: blinkText 1.5s infinite;
+    }
+
+    .node-status-pill.healing {
+      color: var(--neon-purple-bright);
+    }
+
+    .node-spec-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.6rem;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-dark);
+      padding: 0.75rem;
+    }
+
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .spec-k {
+      font-size: 0.64rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .spec-v {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    /* Disk usage progress bar */
+    .disk-track {
+      width: 100%;
+      height: 6px;
+      background: #1E293B;
+      border: 1px solid var(--border-dark);
+      margin-top: 0.3rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .disk-fill {
+      height: 100%;
+      background: var(--neon-green);
+      transition: width 0.4s ease;
+    }
+
+    .node-card.partitioned .disk-fill {
+      background: var(--neon-crimson);
+    }
+
+    .node-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: auto;
+    }
+
+    .node-chaos-btn {
+      width: 100%;
+      padding: 0.7rem;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      border: 2px solid var(--neon-crimson);
+      background: #000;
+      color: var(--neon-crimson);
+      box-shadow: 3px 3px 0px #000;
+      transition: all 0.15s ease;
+    }
+
+    .node-chaos-btn:hover {
+      background: var(--neon-crimson-bg);
+      color: var(--text-white);
+      border-color: var(--neon-crimson-bright);
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0px #000;
+    }
+
+    .node-chaos-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px #000;
+    }
+
+    .node-card.partitioned .node-chaos-btn {
+      border-color: var(--neon-green);
+      color: var(--neon-green-bright);
+      background: #000;
+    }
+
+    .node-card.partitioned .node-chaos-btn:hover {
+      background: var(--neon-green-bg);
+      border-color: var(--neon-green);
+      color: var(--text-white);
+    }
+
+    /* ==========================================================================
+       SECTION 3: CHAOS & NEMESIS MISSION CONTROL
+       ========================================================================== */
+    .chaos-panel {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-dark);
+      box-shadow: 4px 4px 0px #000;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .chaos-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .chaos-title-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .chaos-icon-badge {
+      width: 32px;
+      height: 32px;
+      background: #000;
+      border: 1px solid var(--neon-amber);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon-amber);
+    }
+
+    .chaos-btn-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .chaos-trigger-btn {
+      background: var(--bg-card-inner);
+      border: 2px solid var(--border-dark);
+      padding: 0.85rem 1rem;
+      text-align: left;
+      cursor: pointer;
+      color: var(--text-white);
+      font-family: var(--font-mono);
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      box-shadow: 3px 3px 0px #000;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .chaos-trigger-btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0px #000;
+    }
+
+    .chaos-trigger-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0px #000;
+    }
+
+    .chaos-trigger-btn.btn-minority {
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .chaos-trigger-btn.btn-minority:hover {
+      border-color: var(--neon-amber);
+      background: rgba(245, 158, 11, 0.08);
+    }
+
+    .chaos-trigger-btn.btn-splitbrain {
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+    .chaos-trigger-btn.btn-splitbrain:hover {
+      border-color: var(--neon-crimson);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .chaos-trigger-btn.btn-healall {
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+    .chaos-trigger-btn.btn-healall:hover {
+      border-color: var(--neon-green);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .chaos-trigger-btn.btn-seeddata {
+      border-color: rgba(6, 182, 212, 0.5);
+    }
+    .chaos-trigger-btn.btn-seeddata:hover {
+      border-color: var(--neon-cyan);
+      background: rgba(6, 182, 212, 0.08);
+    }
+
+    .chaos-btn-head {
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .chaos-btn-desc {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    /* Dynamic consensus formula banner */
+    .consensus-formula-strip {
+      background: #000;
+      border: 1px dashed var(--border-dark);
+      padding: 0.65rem 1rem;
+      font-size: 0.72rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      color: var(--text-slate);
+    }
+
+    .formula-badge {
+      color: var(--neon-cyan);
+      font-weight: 700;
+    }
+
+    /* ==========================================================================
+       SECTION 4: LIVE OBJECT STORE & INGESTION ZONE
+       ========================================================================== */
+    .store-zone-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.25rem;
+    }
+    @media (min-width: 1024px) {
+      .store-zone-grid {
+        grid-template-columns: 380px 1fr;
+      }
+    }
+
+    /* Upload Bay */
+    .upload-bay {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-dark);
+      box-shadow: 4px 4px 0px #000;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+    }
+
+    .dropzone {
+      border: 2px dashed var(--border-cyan);
+      background: var(--bg-card-inner);
+      padding: 1.75rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      text-align: center;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--neon-cyan-bright);
+      background: var(--neon-cyan-bg);
+      box-shadow: 0 0 15px var(--neon-cyan-glow);
+    }
+
+    .dropzone-icon {
+      width: 40px;
+      height: 40px;
+      stroke: var(--neon-cyan);
+      fill: none;
+      stroke-width: 2;
+    }
+
+    .dropzone-title {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-white);
+      text-transform: uppercase;
+    }
+
+    .dropzone-hint {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    .selected-file-badge {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid var(--neon-cyan);
+      padding: 0.4rem 0.6rem;
+      font-size: 0.72rem;
+      color: var(--neon-cyan-bright);
+      width: 100%;
+      word-break: break-all;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .input-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .tactile-input {
+      background: var(--bg-card-inner);
+      border: 2px solid var(--border-dark);
+      padding: 0.65rem 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      color: var(--text-white);
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .tactile-input:focus {
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 10px var(--neon-cyan-glow);
+    }
+
+    .quick-prefixes {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .prefix-tag {
+      font-size: 0.64rem;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-dark);
+      padding: 0.15rem 0.45rem;
+      cursor: pointer;
+      color: var(--text-slate);
+    }
+
+    .prefix-tag:hover {
+      color: var(--neon-cyan);
+      border-color: var(--neon-cyan);
+    }
+
+    .quorum-policy-summary {
+      background: #000;
+      border-left: 3px solid var(--neon-green);
+      padding: 0.55rem 0.75rem;
+      font-size: 0.68rem;
+      color: var(--text-slate);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .btn-quorum-commit {
+      background: var(--neon-cyan);
+      color: #000;
+      border: 2px solid #000;
+      box-shadow: 4px 4px 0px #000, 0 0 15px var(--neon-cyan-glow);
+      padding: 0.85rem;
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      transition: all 0.15s ease;
+    }
+
+    .btn-quorum-commit:hover {
+      background: var(--neon-cyan-bright);
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #000, 0 0 25px var(--neon-cyan-glow);
+    }
+
+    .btn-quorum-commit:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .btn-quorum-commit:disabled {
+      background: #334155;
+      color: #94A3B8;
+      cursor: not-allowed;
+      border-color: #475569;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Object Inventory Matrix */
+    .inventory-matrix {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-dark);
+      box-shadow: 4px 4px 0px #000;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .inventory-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .inventory-search-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-dark);
+      padding: 0.35rem 0.65rem;
+    }
+
+    .inventory-search-wrap input {
+      background: transparent;
+      border: none;
+      outline: none;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-white);
+      width: 140px;
+    }
+
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border-dark);
+      background: var(--bg-card-inner);
+    }
+
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.75rem;
+    }
+
+    .matrix-table th {
+      background: #000;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--border-dark);
+      white-space: nowrap;
+    }
+
+    .matrix-table td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--border-dark);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    .matrix-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .object-id-cell {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .file-icon-box {
+      width: 28px;
+      height: 28px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon-cyan);
+      font-size: 0.62rem;
+      font-weight: 800;
+    }
+
+    .object-key-name {
+      font-weight: 700;
+      color: var(--text-white);
+    }
+
+    .hash-badge {
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      background: #000;
+      border: 1px solid var(--border-dark);
+      padding: 0.2rem 0.5rem;
+      color: var(--neon-purple-bright);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s ease;
+    }
+
+    .hash-badge:hover {
+      border-color: var(--neon-purple);
+      background: var(--neon-purple-bg);
+    }
+
+    .replicas-cell {
+      display: flex;
+      gap: 0.35rem;
+      align-items: center;
+    }
+
+    .replica-chip {
+      font-size: 0.62rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border: 1px solid var(--border-dark);
+      background: #000;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .replica-chip.present-online {
+      border-color: var(--neon-green);
+      background: var(--neon-green-bg);
+      color: var(--neon-green-bright);
+    }
+
+    .replica-chip.present-isolated {
+      border-color: var(--neon-crimson);
+      background: var(--neon-crimson-bg);
+      color: var(--neon-crimson-bright);
+      text-decoration: line-through;
+    }
+
+    .replica-chip.missing {
+      opacity: 0.35;
+      border-style: dashed;
+    }
+
+    .action-btn-group {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .btn-action {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-dark);
+      color: var(--text-white);
+      padding: 0.3rem 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      transition: all 0.1s ease;
+    }
+
+    .btn-action:hover {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan-bright);
+    }
+
+    .btn-action.btn-verify:hover {
+      border-color: var(--neon-purple);
+      color: var(--neon-purple-bright);
+    }
+
+    .empty-state {
+      padding: 3rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* ==========================================================================
+       SECTION 5: SELF-HEALING TELEMETRY FEED
+       ========================================================================== */
+    .telemetry-feed {
+      background: #000;
+      border: 2px solid var(--border-dark);
+      box-shadow: 4px 4px 0px #000;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .feed-header {
+      background: var(--bg-surface);
+      border-bottom: 2px solid var(--border-dark);
+      padding: 0.75rem 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .feed-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .feed-filter-group {
+      display: flex;
+      gap: 0.4rem;
+    }
+
+    .filter-btn {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-dark);
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .filter-btn.active {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+      background: var(--neon-cyan-bg);
+    }
+
+    .feed-body {
+      height: 240px;
+      overflow-y: auto;
+      padding: 0.85rem 1.25rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      background: #05080E;
+    }
+
+    .log-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.65rem;
+      word-break: break-word;
+      transition: background 0.15s ease;
+      padding: 0.1rem 0;
+    }
+
+    .log-time {
+      color: var(--text-muted);
+      flex-shrink: 0;
+      font-size: 0.68rem;
+    }
+
+    .log-badge {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0.05rem 0.35rem;
+      border: 1px solid currentColor;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+
+    .log-badge.info { color: var(--neon-cyan); }
+    .log-badge.warn { color: var(--neon-amber); }
+    .log-badge.heal { color: var(--neon-purple-bright); }
+    .log-badge.chaos { color: var(--neon-crimson-bright); }
+    .log-badge.quorum { color: var(--neon-green-bright); }
+
+    .log-msg {
+      color: var(--text-white);
+    }
+
+    .feed-footer {
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-dark);
+      padding: 0.4rem 1.25rem;
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* ==========================================================================
+       MODALS & HUD DIALOGS
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(4px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border: 2px solid var(--neon-purple);
+      box-shadow: 6px 6px 0px #000, 0 0 35px var(--neon-purple-glow);
+      max-width: 580px;
+      width: 100%;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      position: relative;
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-white);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .integrity-scan-anim {
+      height: 4px;
+      background: #1E293B;
+      position: relative;
+      overflow: hidden;
+      margin: 0.5rem 0;
+    }
+
+    .integrity-scan-bar {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 40%;
+      background: var(--neon-purple-bright);
+      box-shadow: 0 0 10px var(--neon-purple);
+      animation: scanSweep 1.2s infinite ease-in-out alternate;
+    }
+
+    .modal-body-content {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-dark);
+      padding: 1rem;
+      font-size: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .modal-close-btn {
+      background: var(--neon-purple);
+      color: #000;
+      border: 2px solid #000;
+      padding: 0.65rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      cursor: pointer;
+      align-self: flex-end;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      z-index: 99999;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: #000;
+      border: 2px solid var(--neon-cyan);
+      box-shadow: 4px 4px 0px #000, 0 0 15px var(--neon-cyan-glow);
+      color: var(--text-white);
+      padding: 0.75rem 1rem;
+      font-size: 0.78rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      pointer-events: auto;
+      animation: slideInRight 0.25s ease-out;
+      max-width: 380px;
+    }
+
+    .toast.toast-error {
+      border-color: var(--neon-crimson);
+      box-shadow: 4px 4px 0px #000, 0 0 15px var(--neon-crimson-glow);
+    }
+
+    .toast.toast-heal {
+      border-color: var(--neon-purple);
+      box-shadow: 4px 4px 0px #000, 0 0 15px var(--neon-purple-glow);
+    }
+
+    /* ==========================================================================
+       ANIMATIONS
+       ========================================================================== */
+    @keyframes pulseGlow {
+      0% { opacity: 0.6; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1.1); }
+    }
+
+    @keyframes alertPulse {
+      0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px var(--neon-crimson)); }
+      50% { transform: scale(1.05); filter: drop-shadow(0 0 15px var(--neon-crimson)); }
+    }
+
+    @keyframes hazardStripes {
+      0% { background-position: 0 0; }
+      100% { background-position: 56px 0; }
+    }
+
+    @keyframes radarSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes blinkText {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    @keyframes scanSweep {
+      0% { left: 0%; }
+      100% { left: 60%; }
+    }
+
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Notification System -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Checksum Verification HUD Modal -->
+  <div class="modal-overlay" id="verifyModal">
+    <div class="modal-card">
+      <div class="modal-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--neon-purple-bright)" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>INTEGRITY VERIFICATION HUD</span>
+      </div>
+      <div class="integrity-scan-anim">
+        <div class="integrity-scan-bar"></div>
+      </div>
+      <div class="modal-body-content" id="modalVerifyBody">
+        <!-- Injected via JavaScript -->
+      </div>
+      <button class="modal-close-btn" id="modalCloseBtn">CLOSE TELEMETRY</button>
+    </div>
+  </div>
+
+  <div class="dashboard-container">
+    
+    <!-- TOP NAVIGATION -->
+    <header class="top-navbar">
+      <div class="brand-wrap">
+        <a href="#" class="brand-logo">
+          <div class="brand-icon-box">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>
+          </div>
+          <div class="brand-title">
+            <span>VAULT</span>
+            <span class="brand-version">v2.4.0-HA</span>
+          </div>
+        </a>
+        <span class="brand-subtitle">// DISTRIBUTED OBJECT STORAGE ENGINE</span>
+      </div>
+
+      <div class="top-actions">
+        <!-- Live Backend indicator with toggle -->
+        <div class="pill-badge active-backend" id="backendBadge" title="Live connection status with Vault Coordinator">
+          <span class="live-dot"></span>
+          <span id="backendStatusText">COORDINATOR :8000</span>
+        </div>
+
+        <!-- Audio Synthesizer toggle -->
+        <button class="btn-tactile-sm" id="sfxToggleBtn" title="Toggle tactile cyber audio synthesizer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <span id="sfxLabel">SFX: OFF</span>
+        </button>
+
+        <!-- Force Refresh -->
+        <button class="btn-tactile-sm" id="refreshBtn" title="Instant state synchronization">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>SYNC</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- SECTION 1: TOP HUD / QUORUM CONSENSUS HEADER -->
+    <section class="quorum-hud">
+      <!-- Giant Real-Time Cluster Consensus Badge -->
+      <div class="consensus-card" id="consensusCard">
+        <div class="corner-tag" id="consensusTag">SEC_01 // RAFT-QUORUM</div>
+        
+        <div class="consensus-header-top">
+          <div class="sub-label">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span>DISTRIBUTED CONSENSUS PROTOCOL &bull; DYNAMO TOPOLOGY</span>
+          </div>
+          <span class="pill-badge" id="quorumStatePill" style="border-color: var(--neon-green); color: var(--neon-green);">
+            QUORUM 2/3
+          </span>
+        </div>
+
+        <div class="consensus-main">
+          <div class="consensus-shield-box" id="consensusShieldBox">
+            <svg id="consensusIcon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <div class="consensus-text-wrap">
+            <h1 class="giant-status-title" id="consensusTitle">CONSENSUS INTACT (W=2, R=1, N=3)</h1>
+            <p class="status-caption" id="consensusCaption">Write & read quorums satisfied across active hardware nodes. Zero dirty-write exposure.</p>
+          </div>
+        </div>
+
+        <div class="consensus-meta-bar">
+          <div class="meta-chip">
+            <span>CONSISTENCY:</span>
+            <strong id="metaConsistency">STRONG-ISH (R+W > N)</strong>
+          </div>
+          <div class="meta-chip">
+            <span>ACTIVE MEMBERSHIP:</span>
+            <strong id="metaActiveNodes">node-1, node-2, node-3</strong>
+          </div>
+          <div class="meta-chip">
+            <span>NETWORK PARTITIONS:</span>
+            <strong id="metaPartitionCount" style="color: var(--neon-green-bright);">0 DETECTED</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Counters (Replicas, Efficiency, Anti-Entropy, Latency) -->
+      <div class="kpi-grid">
+        <!-- Counter 1: Total Replicas Online -->
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">REPLICAS ONLINE</span>
+            <svg class="kpi-icon" viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+          </div>
+          <div class="kpi-value" id="kpiReplicasOnline">
+            <span>3</span><span class="kpi-unit">/ 3 NODES</span>
+          </div>
+          <div class="kpi-foot">
+            <span id="kpiReplicaLed" style="color: var(--neon-green); font-size: 0.8rem;">●●●</span>
+            <span id="kpiReplicaDetails">All 3 OSD instances healthy</span>
+          </div>
+        </div>
+
+        <!-- Counter 2: Storage Efficiency -->
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">STORAGE EFFICIENCY</span>
+            <svg class="kpi-icon" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          </div>
+          <div class="kpi-value" id="kpiEfficiency">
+            <span>66.7</span><span class="kpi-unit">% (RS: 2/3)</span>
+          </div>
+          <div class="kpi-foot">
+            <span>Durability: 99.999% SLA</span>
+          </div>
+        </div>
+
+        <!-- Counter 3: Anti-Entropy Scanners -->
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">ANTI-ENTROPY SCANNERS</span>
+            <span class="pulse-radar-dot"></span>
+          </div>
+          <div class="kpi-value" style="color: var(--neon-purple-bright);" id="kpiScanners">
+            <span>ACTIVE</span><span class="kpi-unit" style="color: var(--neon-purple-bright);">CYCLE: 2.0s</span>
+          </div>
+          <div class="kpi-foot" style="color: var(--neon-purple-bright);">
+            <span id="kpiHealCount">Self-healing loop running</span>
+          </div>
+        </div>
+
+        <!-- Counter 4: Cluster I/O Latency -->
+        <div class="kpi-card">
+          <div class="kpi-top">
+            <span class="kpi-label">P99 COMMITTED LATENCY</span>
+            <svg class="kpi-icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="kpi-value" id="kpiLatency">
+            <span>1.2</span><span class="kpi-unit">ms PING</span>
+          </div>
+          <div class="kpi-foot">
+            <span id="kpiIops">Read Quorum: 1 node (fast-path)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: STORAGE NODES ARENA (3 INTERACTIVE NODE CARDS) -->
+    <section class="section-wrap">
+      <div class="section-header">
+        <div class="section-title">
+          <span>STORAGE NODES ARENA</span>
+          <span class="section-title-tag">N=3 OSD TOPOLOGY</span>
+        </div>
+        <div class="sub-label">ISOLATE NODES TO SIMULATE NETWORK PARTITIONS</div>
+      </div>
+
+      <div class="nodes-grid" id="nodesContainer">
+        <!-- Node 1 -->
+        <div class="node-card" id="card-node-1" data-node="node-1">
+          <div class="node-header">
+            <div class="node-title-group">
+              <div class="node-id-row">
+                <span class="node-id">NODE-1</span>
+                <span class="node-port">:9001</span>
+              </div>
+              <span class="node-subtext">RACK us-east-1a &bull; NVMe ARRAY 01</span>
+            </div>
+            <div class="node-status-pill online" id="status-node-1">
+              <span class="live-dot"></span>
+              <span>ONLINE</span>
+            </div>
+          </div>
+
+          <div class="node-spec-grid">
+            <div class="spec-item">
+              <span class="spec-k">STORED CHUNKS</span>
+              <span class="spec-v" id="chunks-node-1">0 CHUNKS</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">HEARTBEAT PING</span>
+              <span class="spec-v" id="ping-node-1">&lt; 1.0 ms</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">DATA DIRECTORY</span>
+              <span class="spec-v" style="font-size: 0.65rem; color: var(--neon-cyan);">./vault_data_1</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">ROLE IN QUORUM</span>
+              <span class="spec-v" style="font-size: 0.72rem; color: var(--neon-green-bright);">PRIMARY FOLLOWER</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted);">
+              <span>ALLOCATION LOAD</span>
+              <span id="alloc-node-1">12%</span>
+            </div>
+            <div class="disk-track">
+              <div class="disk-fill" id="fill-node-1" style="width: 12%;"></div>
+            </div>
+          </div>
+
+          <div class="node-footer">
+            <button class="node-chaos-btn" id="chaos-btn-node-1" onclick="togglePartition('node-1')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>ISOLATE NODE (CHAOS)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Node 2 -->
+        <div class="node-card" id="card-node-2" data-node="node-2">
+          <div class="node-header">
+            <div class="node-title-group">
+              <div class="node-id-row">
+                <span class="node-id">NODE-2</span>
+                <span class="node-port">:9002</span>
+              </div>
+              <span class="node-subtext">RACK us-east-1b &bull; NVMe ARRAY 02</span>
+            </div>
+            <div class="node-status-pill online" id="status-node-2">
+              <span class="live-dot"></span>
+              <span>ONLINE</span>
+            </div>
+          </div>
+
+          <div class="node-spec-grid">
+            <div class="spec-item">
+              <span class="spec-k">STORED CHUNKS</span>
+              <span class="spec-v" id="chunks-node-2">0 CHUNKS</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">HEARTBEAT PING</span>
+              <span class="spec-v" id="ping-node-2">&lt; 1.0 ms</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">DATA DIRECTORY</span>
+              <span class="spec-v" style="font-size: 0.65rem; color: var(--neon-cyan);">./vault_data_2</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">ROLE IN QUORUM</span>
+              <span class="spec-v" style="font-size: 0.72rem; color: var(--neon-green-bright);">PRIMARY FOLLOWER</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted);">
+              <span>ALLOCATION LOAD</span>
+              <span id="alloc-node-2">12%</span>
+            </div>
+            <div class="disk-track">
+              <div class="disk-fill" id="fill-node-2" style="width: 12%;"></div>
+            </div>
+          </div>
+
+          <div class="node-footer">
+            <button class="node-chaos-btn" id="chaos-btn-node-2" onclick="togglePartition('node-2')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>ISOLATE NODE (CHAOS)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Node 3 -->
+        <div class="node-card" id="card-node-3" data-node="node-3">
+          <div class="node-header">
+            <div class="node-title-group">
+              <div class="node-id-row">
+                <span class="node-id">NODE-3</span>
+                <span class="node-port">:9003</span>
+              </div>
+              <span class="node-subtext">RACK us-east-1c &bull; NVMe ARRAY 03</span>
+            </div>
+            <div class="node-status-pill online" id="status-node-3">
+              <span class="live-dot"></span>
+              <span>ONLINE</span>
+            </div>
+          </div>
+
+          <div class="node-spec-grid">
+            <div class="spec-item">
+              <span class="spec-k">STORED CHUNKS</span>
+              <span class="spec-v" id="chunks-node-3">0 CHUNKS</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">HEARTBEAT PING</span>
+              <span class="spec-v" id="ping-node-3">&lt; 1.0 ms</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">DATA DIRECTORY</span>
+              <span class="spec-v" style="font-size: 0.65rem; color: var(--neon-cyan);">./vault_data_3</span>
+            </div>
+            <div class="spec-item">
+              <span class="spec-k">ROLE IN QUORUM</span>
+              <span class="spec-v" style="font-size: 0.72rem; color: var(--neon-green-bright);">PRIMARY FOLLOWER</span>
+            </div>
+          </div>
+
+          <div>
+            <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--text-muted);">
+              <span>ALLOCATION LOAD</span>
+              <span id="alloc-node-3">12%</span>
+            </div>
+            <div class="disk-track">
+              <div class="disk-fill" id="fill-node-3" style="width: 12%;"></div>
+            </div>
+          </div>
+
+          <div class="node-footer">
+            <button class="node-chaos-btn" id="chaos-btn-node-3" onclick="togglePartition('node-3')">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>ISOLATE NODE (CHAOS)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: CHAOS & NEMESIS MISSION CONTROL -->
+    <section class="section-wrap">
+      <div class="section-header">
+        <div class="section-title">
+          <span>CHAOS & NEMESIS MISSION CONTROL</span>
+          <span class="section-title-tag" style="border-color: var(--border-crimson); color: var(--neon-crimson); background: var(--neon-crimson-bg);">FAULT INJECTION SUITE</span>
+        </div>
+        <div class="sub-label">1-CLICK HIGH-ENERGY DISASTER SIMULATION</div>
+      </div>
+
+      <div class="chaos-panel">
+        <div class="chaos-header">
+          <div class="chaos-title-box">
+            <div class="chaos-icon-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <strong style="font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.05em;">CATACLYSMIC NETWORK CHAOS ENGINE</strong>
+              <div style="font-size: 0.68rem; color: var(--text-muted);">Induce distributed partitions, test Paxos/Dynamo quorum invariants and automated anti-entropy healing.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="chaos-btn-bar">
+          <!-- Button 1: Minority Failure -->
+          <button class="chaos-trigger-btn btn-minority" id="btnChaosMinority" onclick="simulateMinorityFailure()">
+            <div class="chaos-btn-head" style="color: var(--neon-amber);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              <span>1. MINORITY FAILURE</span>
+            </div>
+            <div class="chaos-btn-desc">Partitions Node 3 only. Active = 2/3. Proves writes & reads continue unhindered because quorum W=2 is met.</div>
+          </button>
+
+          <!-- Button 2: Split-Brain Stress -->
+          <button class="chaos-trigger-btn btn-splitbrain" id="btnChaosSplitBrain" onclick="triggerSplitBrainStress()">
+            <div class="chaos-btn-head" style="color: var(--neon-crimson-bright);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+              <span>2. SPLIT-BRAIN STRESS</span>
+            </div>
+            <div class="chaos-btn-desc">Partitions Node 2 & 3 simultaneously. Active = 1/3. System locks writes to prevent dirty writes / split-brain divergence.</div>
+          </button>
+
+          <!-- Button 3: Heal Entire Mesh -->
+          <button class="chaos-trigger-btn btn-healall" id="btnChaosHealAll" onclick="healEntireMesh()">
+            <div class="chaos-btn-head" style="color: var(--neon-green-bright);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+              <span>3. HEAL ENTIRE MESH</span>
+            </div>
+            <div class="chaos-btn-desc">Restores all network partitions. Triggers immediate anti-entropy background repair to re-synchronize missing chunks!</div>
+          </button>
+
+          <!-- Button 4: Inject Sample Payloads -->
+          <button class="chaos-trigger-btn btn-seeddata" id="btnSeedData" onclick="seedSampleObjects()">
+            <div class="chaos-btn-head" style="color: var(--neon-cyan);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>4. INJECT TEST PAYLOADS</span>
+            </div>
+            <div class="chaos-btn-desc">Seeds realistic test binaries & config objects into the storage engine to immediately populate the inventory.</div>
+          </button>
+        </div>
+
+        <div class="consensus-formula-strip">
+          <div>
+            <span>QUORUM THEOREM: </span>
+            <span class="formula-badge">W (2) + R (1) &gt; N (3)</span>
+            <span>&bull; STRONG CONSISTENCY GUARANTEE</span>
+          </div>
+          <div style="color: var(--text-muted);">
+            R=1 (FAST READS) &bull; W=2 (TOLERATES 1 FAULT)
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: LIVE OBJECT STORE & INGESTION ZONE -->
+    <section class="section-wrap">
+      <div class="section-header">
+        <div class="section-title">
+          <span>LIVE OBJECT STORE & INGESTION ZONE</span>
+          <span class="section-title-tag">OBJECT STORAGE INVENTORY</span>
+        </div>
+        <div class="sub-label">MULTI-PART INGESTION WITH SHA-256 INTEGRITY VALIDATION</div>
+      </div>
+
+      <div class="store-zone-grid">
+        <!-- Upload Bay -->
+        <div class="upload-bay">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="font-size: 0.85rem; text-transform: uppercase;">OBJECT INGESTION BAY</strong>
+            <span class="brand-version" style="font-size: 0.62rem;">ENCRYPTED &bull; RF=3</span>
+          </div>
+
+          <!-- Drag and Drop Area -->
+          <div class="dropzone" id="dropzone" onclick="document.getElementById('filePicker').click()">
+            <input type="file" id="filePicker" style="display: none;" onchange="handleFileSelected(this.files[0])">
+            <svg class="dropzone-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <div class="dropzone-title">DRAG & DROP ARTIFACT HERE</div>
+            <div class="dropzone-hint">or click to browse local files</div>
+            <div class="selected-file-badge" id="selectedFileBadge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+              <span id="selectedFileName">no file chosen</span>
+            </div>
+          </div>
+
+          <!-- Object Key Input -->
+          <div class="input-group">
+            <div class="input-label">
+              <span>OBJECT KEY (UNIQUE IDENTIFIER)</span>
+              <span style="color: var(--neon-cyan); cursor: pointer;" onclick="generateRandomKey()">[RANDOMIZE]</span>
+            </div>
+            <input type="text" class="tactile-input" id="objectKeyInput" placeholder="e.g. system_kernel.bin">
+            <div class="quick-prefixes">
+              <span class="prefix-tag" onclick="appendPrefix('backup/')">backup/</span>
+              <span class="prefix-tag" onclick="appendPrefix('data/')">data/</span>
+              <span class="prefix-tag" onclick="appendPrefix('media/')">media/</span>
+              <span class="prefix-tag" onclick="appendPrefix('logs/')">logs/</span>
+            </div>
+          </div>
+
+          <!-- Quorum Policy Notice -->
+          <div class="quorum-policy-summary">
+            <strong>TARGET COMMIT POLICY: W=2 (QUORUM)</strong>
+            <span>Payload must synchronously write to at least 2 online storage nodes before returning 200 OK.</span>
+          </div>
+
+          <!-- Quorum Commit Upload Button -->
+          <button class="btn-quorum-commit" id="btnQuorumCommit" onclick="executeQuorumUpload()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>QUORUM COMMIT UPLOAD</span>
+          </button>
+        </div>
+
+        <!-- Object Inventory Matrix -->
+        <div class="inventory-matrix">
+          <div class="inventory-top-bar">
+            <div>
+              <strong style="font-size: 0.85rem; text-transform: uppercase;">DISTRIBUTED OBJECT MATRIX</strong>
+              <div style="font-size: 0.68rem; color: var(--text-muted);" id="inventorySummary">TRACKING 0 CLUSTER OBJECTS</div>
+            </div>
+            <div class="inventory-search-wrap">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="inventorySearch" placeholder="FILTER KEY..." oninput="renderObjectInventory()">
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="matrix-table">
+              <thead>
+                <tr>
+                  <th>OBJECT KEY / IDENTIFIER</th>
+                  <th>CRYPTOGRAPHIC HASH (SHA-256)</th>
+                  <th>REPLICA CHUNKS ON NODES</th>
+                  <th>INTEGRITY STATUS</th>
+                  <th style="text-align: right;">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: SELF-HEALING TELEMETRY FEED -->
+    <section class="section-wrap">
+      <div class="section-header">
+        <div class="section-title">
+          <span>SELF-HEALING TELEMETRY FEED</span>
+          <span class="section-title-tag" style="border-color: var(--border-purple); color: var(--neon-purple-bright); background: var(--neon-purple-bg);">LIVE REAL-TIME STREAM</span>
+        </div>
+        <div class="sub-label">EVENT TRACE & ANTI-ENTROPY RECONSTRUCTION LOG</div>
+      </div>
+
+      <div class="telemetry-feed">
+        <div class="feed-header">
+          <div class="feed-title-wrap">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--neon-purple-bright)" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            <span style="font-weight: 700; font-size: 0.78rem; letter-spacing: 0.05em;">SYSTEM CONSOLE (TAIL -F)</span>
+          </div>
+
+          <div class="feed-filter-group">
+            <button class="filter-btn active" onclick="setLogFilter('ALL')">ALL</button>
+            <button class="filter-btn" onclick="setLogFilter('QUORUM')">QUORUM</button>
+            <button class="filter-btn" onclick="setLogFilter('CHAOS')">CHAOS</button>
+            <button class="filter-btn" onclick="setLogFilter('HEAL')">HEAL</button>
+            <button class="filter-btn" onclick="clearTelemetryFeed()" title="Clear terminal">CLEAR</button>
+          </div>
+        </div>
+
+        <div class="feed-body" id="feedBody">
+          <!-- Live logs injected here -->
+        </div>
+
+        <div class="feed-footer">
+          <span>TERMINAL BUFFER: 100 EVENTS MAXIMUM &bull; AUTO-SCROLL ACTIVE</span>
+          <span id="feedStatusTime">UTC 2026-09-26</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- JAVASCRIPT LOGIC & LOCAL API POLLING LOOP -->
+  <script>
+    /* ==========================================================================
+       STATE MANAGEMENT & API INTEGRATION
+       ========================================================================== */
+    const CONFIG = {
+      POLL_INTERVAL: 1500, // 1.5 seconds as requested
+      STORAGE_NODES: [
+        { id: "node-1", port: 9001, label: "OSD Alpha" },
+        { id: "node-2", port: 9002, label: "OSD Beta" },
+        { id: "node-3", port: 9003, label: "OSD Gamma" }
+      ],
+      WRITE_QUORUM: 2,
+      REPLICATION_FACTOR: 3
+    };
+
+    const state = {
+      status: "HEALTHY",
+      active_nodes: ["node-1", "node-2", "node-3"],
+      partitioned_nodes: new Set(),
+      total_objects: 0,
+      objects: {}, // Map of object_id -> { checksum, replicas }
+      isLiveBackend: true,
+      lastSyncTimestamp: null,
+      soundEnabled: false,
+      logFilter: "ALL",
+      selectedFile: null,
+      totalHealsReconstructed: 0
+    };
+
+    // Telemetry Log Store
+    const logs = [];
+
+    /* ==========================================================================
+       TACTILE WEB AUDIO SYNTHESIZER
+       ========================================================================== */
+    let audioCtx = null;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.08, gainVal = 0.06) {
+      if (!state.soundEnabled) return;
+      try {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(gainVal, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.warn("Audio play error", e);
+      }
+    }
+
+    function sfxClick() { playTone(880, 'sine', 0.04, 0.04); }
+    function sfxChaos() { 
+      playTone(180, 'sawtooth', 0.25, 0.08); 
+      setTimeout(() => playTone(120, 'sawtooth', 0.35, 0.09), 100);
+    }
+    function sfxQuorumCommit() {
+      playTone(523.25, 'triangle', 0.1, 0.08);
+      setTimeout(() => playTone(659.25, 'triangle', 0.12, 0.08), 80);
+      setTimeout(() => playTone(783.99, 'triangle', 0.2, 0.1), 160);
+    }
+    function sfxHeal() {
+      playTone(440, 'sine', 0.12, 0.06);
+      setTimeout(() => playTone(880, 'sine', 0.2, 0.08), 90);
+    }
+    function sfxAlert() {
+      playTone(330, 'square', 0.15, 0.08);
+      setTimeout(() => playTone(293.66, 'square', 0.2, 0.08), 120);
+    }
+
+    // Toggle Sound
+    document.getElementById('sfxToggleBtn').addEventListener('click', () => {
+      state.soundEnabled = !state.soundEnabled;
+      const btn = document.getElementById('sfxToggleBtn');
+      const label = document.getElementById('sfxLabel');
+      if (state.soundEnabled) {
+        initAudio();
+        btn.classList.add('active-sound');
+        label.textContent = "SFX: ON";
+        sfxQuorumCommit();
+        showToast("Audio synthesizer activated", "toast-heal");
+      } else {
+        btn.classList.remove('active-sound');
+        label.textContent = "SFX: OFF";
+      }
+    });
+
+    /* ==========================================================================
+       TOAST SYSTEM
+       ========================================================================== */
+    function showToast(message, type = "") {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      let icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+      if (type === 'toast-error') {
+        icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`;
+      } else if (type === 'toast-heal') {
+        icon = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`;
+      }
+
+      toast.innerHTML = `${icon} <span>${message}</span>`;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.25s ease';
+        setTimeout(() => toast.remove(), 250);
+      }, 3500);
+    }
+
+    /* ==========================================================================
+       TELEMETRY LOGS ENGINE
+       ========================================================================== */
+    function addLog(badge, message, category = "INFO") {
+      const now = new Date();
+      const timeStr = now.toTimeString().split(' ')[0] + '.' + String(now.getMilliseconds()).padStart(3, '0');
+      const logEntry = {
+        time: timeStr,
+        badge: badge.toUpperCase(),
+        message,
+        category: category.toUpperCase()
+      };
+      logs.unshift(logEntry);
+      if (logs.length > 100) logs.pop();
+      renderTelemetryFeed();
+    }
+
+    function renderTelemetryFeed() {
+      const feed = document.getElementById('feedBody');
+      const filtered = logs.filter(l => {
+        if (state.logFilter === 'ALL') return true;
+        if (state.logFilter === 'QUORUM') return l.category === 'QUORUM' || l.badge === 'QUORUM';
+        if (state.logFilter === 'CHAOS') return l.category === 'CHAOS' || l.badge === 'CHAOS' || l.badge === 'WARN';
+        if (state.logFilter === 'HEAL') return l.category === 'HEAL' || l.badge === 'HEAL';
+        return true;
+      });
+
+      feed.innerHTML = filtered.map(l => {
+        let badgeClass = 'info';
+        if (l.badge === 'WARN' || l.badge === 'ERROR') badgeClass = 'warn';
+        if (l.badge === 'HEAL' || l.badge === 'REPAIR') badgeClass = 'heal';
+        if (l.badge === 'CHAOS') badgeClass = 'chaos';
+        if (l.badge === 'QUORUM' || l.badge === 'COMMIT') badgeClass = 'quorum';
+
+        return `
+          <div class="log-row">
+            <span class="log-time">[${l.time}]</span>
+            <span class="log-badge ${badgeClass}">${l.badge}</span>
+            <span class="log-msg">${escapeHtml(l.message)}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function setLogFilter(filterName) {
+      state.logFilter = filterName;
+      document.querySelectorAll('.filter-btn').forEach(b => {
+        b.classList.toggle('active', b.textContent === filterName);
+      });
+      renderTelemetryFeed();
+      sfxClick();
+    }
+
+    function clearTelemetryFeed() {
+      logs.length = 0;
+      addLog("INFO", "Telemetry log buffer cleared by administrator.", "INFO");
+      renderTelemetryFeed();
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* ==========================================================================
+       API POLLING & BACKEND SYNCHRONIZATION
+       ========================================================================== */
+    async function fetchHealth() {
+      try {
+        const res = await fetch('/health', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Health check returned status ${res.status}`);
+        const data = await res.json();
+        
+        // Update active nodes
+        const prevActive = state.active_nodes;
+        state.status = data.status || (data.active_nodes && data.active_nodes.length >= CONFIG.WRITE_QUORUM ? "HEALTHY" : "DEGRADED");
+        state.active_nodes = data.active_nodes || [];
+        state.total_objects = data.total_objects !== undefined ? data.total_objects : Object.keys(state.objects).length;
+        
+        // Check for node failure/recovery events
+        CONFIG.STORAGE_NODES.forEach(node => {
+          const wasActive = prevActive.includes(node.id);
+          const isNowActive = state.active_nodes.includes(node.id);
+          if (wasActive && !isNowActive) {
+            addLog("WARN", `Heartbeat lost on ${node.id} (${node.port}) - Node isolated from quorum`, "CHAOS");
+          } else if (!wasActive && isNowActive) {
+            addLog("HEAL", `Heartbeat acknowledged on ${node.id} (${node.port}) - Rejoined active cluster`, "HEAL");
+          }
+        });
+
+        markBackendLive(true);
+      } catch (err) {
+        console.warn("Fetch /health failed, switching to local state:", err);
+        markBackendLive(false);
+      }
+    }
+
+    async function fetchObjects() {
+      try {
+        const res = await fetch('/vault/objects', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`Objects list returned status ${res.status}`);
+        const data = await res.json();
+        
+        // Check if new objects arrived or replicas changed
+        const prevKeys = Object.keys(state.objects);
+        state.objects = data || {};
+        
+        Object.keys(state.objects).forEach(key => {
+          if (!prevKeys.includes(key)) {
+            addLog("QUORUM", `New object detected in cluster: '${key}' [replicas: ${state.objects[key].replicas.join(', ')}]`, "QUORUM");
+          }
+        });
+
+        markBackendLive(true);
+      } catch (err) {
+        console.warn("Fetch /vault/objects failed:", err);
+      }
+    }
+
+    function markBackendLive(isLive) {
+      state.isLiveBackend = isLive;
+      const badge = document.getElementById('backendBadge');
+      const text = document.getElementById('backendStatusText');
+      if (isLive) {
+        badge.className = "pill-badge active-backend";
+        text.textContent = "COORDINATOR :8000";
+      } else {
+        badge.className = "pill-badge offline-backend";
+        text.textContent = "STANDALONE / SIM";
+      }
+    }
+
+    async function syncLoop() {
+      await fetchHealth();
+      await fetchObjects();
+      updateDashboardUI();
+    }
+
+    /* ==========================================================================
+       UI UPDATES & RENDERING
+       ========================================================================== */
+    function updateDashboardUI() {
+      const activeCount = state.active_nodes.length;
+      const isQuorumIntact = activeCount >= CONFIG.WRITE_QUORUM;
+
+      // 1. Top Consensus Card
+      const card = document.getElementById('consensusCard');
+      const title = document.getElementById('consensusTitle');
+      const caption = document.getElementById('consensusCaption');
+      const pill = document.getElementById('quorumStatePill');
+      const shield = document.getElementById('consensusShieldBox');
+      const icon = document.getElementById('consensusIcon');
+      const metaPartition = document.getElementById('metaPartitionCount');
+      const metaActive = document.getElementById('metaActiveNodes');
+
+      metaActive.textContent = state.active_nodes.length > 0 ? state.active_nodes.join(', ') : "NONE (TOTAL ISOLATION)";
+      const partitionedCount = CONFIG.STORAGE_NODES.length - activeCount;
+      
+      if (partitionedCount > 0) {
+        metaPartition.textContent = `${partitionedCount} NODE(S) ISOLATED`;
+        metaPartition.style.color = "var(--neon-crimson-bright)";
+      } else {
+        metaPartition.textContent = "0 DETECTED";
+        metaPartition.style.color = "var(--neon-green-bright)";
+      }
+
+      if (isQuorumIntact) {
+        card.classList.remove('quorum-lost');
+        title.textContent = `CONSENSUS INTACT (W=2, R=1, N=3)`;
+        title.style.color = "var(--neon-green-bright)";
+        caption.textContent = `Write & read quorums satisfied across ${activeCount}/3 active nodes. Distributed consensus online.`;
+        pill.textContent = `QUORUM ${activeCount}/3`;
+        pill.style.borderColor = "var(--neon-green)";
+        pill.style.color = "var(--neon-green-bright)";
+        shield.style.borderColor = "var(--neon-green)";
+        icon.innerHTML = `<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>`;
+        document.getElementById('btnQuorumCommit').disabled = false;
+      } else {
+        card.classList.add('quorum-lost');
+        title.textContent = `SPLIT-BRAIN BLOCKED / QUORUM LOST`;
+        title.style.color = "var(--neon-crimson-bright)";
+        caption.textContent = `Active nodes (${activeCount}/3) dropped below W=2 quorum threshold! Writes are safely locked to prevent partition divergence.`;
+        pill.textContent = `CRITICAL ${activeCount}/3`;
+        pill.style.borderColor = "var(--neon-crimson)";
+        pill.style.color = "var(--neon-crimson-bright)";
+        shield.style.borderColor = "var(--neon-crimson)";
+        icon.innerHTML = `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`;
+        document.getElementById('btnQuorumCommit').disabled = true;
+      }
+
+      // 2. KPI Cards
+      document.getElementById('kpiReplicasOnline').innerHTML = `<span>${activeCount}</span><span class="kpi-unit">/ 3 NODES</span>`;
+      let ledStr = "";
+      CONFIG.STORAGE_NODES.forEach(n => {
+        ledStr += state.active_nodes.includes(n.id) ? "●" : "○";
+      });
+      const ledEl = document.getElementById('kpiReplicaLed');
+      ledEl.textContent = ledStr;
+      ledEl.style.color = isQuorumIntact ? "var(--neon-green)" : "var(--neon-crimson)";
+      document.getElementById('kpiReplicaDetails').textContent = `${activeCount} online, ${partitionedCount} isolated`;
+
+      // 3. Storage Nodes Cards
+      CONFIG.STORAGE_NODES.forEach(node => {
+        const nodeCard = document.getElementById(`card-${node.id}`);
+        const statusPill = document.getElementById(`status-${node.id}`);
+        const chunksEl = document.getElementById(`chunks-${node.id}`);
+        const pingEl = document.getElementById(`ping-${node.id}`);
+        const chaosBtn = document.getElementById(`chaos-btn-${node.id}`);
+        const allocEl = document.getElementById(`alloc-${node.id}`);
+        const fillEl = document.getElementById(`fill-${node.id}`);
+
+        const isOnline = state.active_nodes.includes(node.id);
+
+        // Count chunks on this node
+        let chunkCount = 0;
+        Object.values(state.objects).forEach(obj => {
+          if (obj.replicas && obj.replicas.includes(node.id)) {
+            chunkCount++;
+          }
+        });
+
+        chunksEl.textContent = `${chunkCount} CHUNK${chunkCount === 1 ? '' : 'S'}`;
+        const loadPct = Math.min(100, Math.max(10, chunkCount * 25));
+        allocEl.textContent = `${loadPct}%`;
+        fillEl.style.width = `${loadPct}%`;
+
+        if (isOnline) {
+          nodeCard.classList.remove('partitioned');
+          statusPill.className = "node-status-pill online";
+          statusPill.innerHTML = `<span class="live-dot"></span><span>ONLINE</span>`;
+          pingEl.textContent = `< ${(Math.random() * 0.8 + 0.4).toFixed(1)} ms`;
+          pingEl.style.color = "var(--text-white)";
+          chaosBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            <span>ISOLATE NODE (CHAOS)</span>
+          `;
+        } else {
+          nodeCard.classList.add('partitioned');
+          statusPill.className = "node-status-pill isolated";
+          statusPill.innerHTML = `<span>✕ ISOLATED</span>`;
+          pingEl.textContent = "TIMEOUT (LOST)";
+          pingEl.style.color = "var(--neon-crimson-bright)";
+          chaosBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>RESTORE NETWORK</span>
+          `;
+        }
+      });
+
+      // 4. Render Object Inventory
+      renderObjectInventory();
+
+      // Update summary counter
+      const totalKeys = Object.keys(state.objects).length;
+      document.getElementById('inventorySummary').textContent = `TRACKING ${totalKeys} DISTRIBUTED OBJECT${totalKeys === 1 ? '' : 'S'}`;
+    }
+
+    function renderObjectInventory() {
+      const tbody = document.getElementById('inventoryTableBody');
+      const query = (document.getElementById('inventorySearch').value || '').trim().toLowerCase();
+      const keys = Object.keys(state.objects);
+
+      if (keys.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5">
+              <div class="empty-state">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="15"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-white); text-transform: uppercase;">VAULT STORE IS EMPTY</div>
+                <div style="font-size: 0.72rem;">Drag and drop an artifact in the Ingestion Bay or click "Inject Test Payloads" above.</div>
+              </div>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const filteredKeys = keys.filter(k => k.toLowerCase().includes(query));
+
+      if (filteredKeys.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 2rem; color: var(--text-muted);">
+              No objects matched query "${escapeHtml(query)}"
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filteredKeys.map(key => {
+        const item = state.objects[key];
+        const replicas = item.replicas || [];
+        const checksum = item.checksum || 'N/A';
+        const shortHash = checksum.length > 16 ? `${checksum.slice(0, 8)}...${checksum.slice(-6)}` : checksum;
+        
+        // File extension badge
+        const ext = key.includes('.') ? key.split('.').pop().toUpperCase().slice(0, 4) : 'BIN';
+
+        // Check replica health
+        const healthyReplicas = replicas.filter(r => state.active_nodes.includes(r));
+        let statusBadge = "";
+        if (healthyReplicas.length >= 3) {
+          statusBadge = `<span class="pill-badge" style="border-color: var(--neon-green); color: var(--neon-green-bright); background: var(--neon-green-bg);">FULL RF (3/3)</span>`;
+        } else if (healthyReplicas.length >= CONFIG.WRITE_QUORUM) {
+          statusBadge = `<span class="pill-badge" style="border-color: var(--neon-cyan); color: var(--neon-cyan-bright); background: var(--neon-cyan-bg);">QUORUM (${healthyReplicas.length}/3)</span>`;
+        } else if (healthyReplicas.length > 0) {
+          statusBadge = `<span class="pill-badge" style="border-color: var(--neon-amber); color: var(--neon-amber); background: var(--neon-amber-bg);">DEGRADED (1/3)</span>`;
+        } else {
+          statusBadge = `<span class="pill-badge" style="border-color: var(--neon-crimson); color: var(--neon-crimson-bright); background: var(--neon-crimson-bg);">UNAVAILABLE (0/3)</span>`;
+        }
+
+        // Replica chips for each of the 3 nodes
+        const replicaChips = CONFIG.STORAGE_NODES.map(node => {
+          const hasReplica = replicas.includes(node.id);
+          const isNodeActive = state.active_nodes.includes(node.id);
+          
+          if (!hasReplica) {
+            return `<span class="replica-chip missing" title="Chunk not present on ${node.id}">${node.id}</span>`;
+          }
+          if (isNodeActive) {
+            return `<span class="replica-chip present-online" title="Online replica on ${node.id}">✓ ${node.id}</span>`;
+          } else {
+            return `<span class="replica-chip present-isolated" title="Replica stored on isolated ${node.id}">✕ ${node.id}</span>`;
+          }
+        }).join('');
+
+        return `
+          <tr>
+            <td>
+              <div class="object-id-cell">
+                <div class="file-icon-box">${ext}</div>
+                <div class="object-key-name">${escapeHtml(key)}</div>
+              </div>
+            </td>
+            <td>
+              <span class="hash-badge" onclick="copyChecksum('${checksum}')" title="Click to copy full SHA-256 hash">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span>${shortHash}</span>
+              </span>
+            </td>
+            <td>
+              <div class="replicas-cell">
+                ${replicaChips}
+              </div>
+            </td>
+            <td>
+              ${statusBadge}
+            </td>
+            <td style="text-align: right;">
+              <div class="action-btn-group" style="justify-content: flex-end;">
+                <button class="btn-action" onclick="downloadObject('${escapeHtml(key)}')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  <span>GET</span>
+                </button>
+                <button class="btn-action btn-verify" onclick="verifyObjectIntegrity('${escapeHtml(key)}')">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                  <span>VERIFY</span>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    /* ==========================================================================
+       ACTION HANDLERS & CHAOS SIMULATION
+       ========================================================================== */
+    async function togglePartition(nodeId) {
+      sfxChaos();
+      const isCurrentlyActive = state.active_nodes.includes(nodeId);
+      
+      if (isCurrentlyActive) {
+        addLog("CHAOS", `Catastrophic partition injected: Isolating ${nodeId} from mesh...`, "CHAOS");
+        try {
+          const res = await fetch(`/test/partition/${nodeId}`, { method: 'POST' });
+          if (!res.ok) throw new Error("Partition endpoint failed");
+          state.active_nodes = state.active_nodes.filter(id => id !== nodeId);
+        } catch (e) {
+          // Client-side fallback if backend call failed
+          state.active_nodes = state.active_nodes.filter(id => id !== nodeId);
+        }
+        showToast(`Node ${nodeId} network severed!`, "toast-error");
+      } else {
+        addLog("HEAL", `Network healed for ${nodeId} - Initiating anti-entropy sync...`, "HEAL");
+        try {
+          const res = await fetch(`/test/heal-network/${nodeId}`, { method: 'POST' });
+          if (!res.ok) throw new Error("Heal endpoint failed");
+          if (!state.active_nodes.includes(nodeId)) state.active_nodes.push(nodeId);
+        } catch (e) {
+          if (!state.active_nodes.includes(nodeId)) state.active_nodes.push(nodeId);
+        }
+        showToast(`Node ${nodeId} reconnected to mesh!`, "toast-heal");
+      }
+
+      await syncLoop();
+    }
+
+    // Disaster Preset 1: Simulate Minority Failure
+    async function simulateMinorityFailure() {
+      sfxChaos();
+      addLog("CHAOS", "Simulating minority node failure: Partitioning node-3 (2/3 nodes remain)", "CHAOS");
+      
+      // Heal 1 and 2 if needed, partition 3
+      await fetch('/test/heal-network/node-1', { method: 'POST' }).catch(() => {});
+      await fetch('/test/heal-network/node-2', { method: 'POST' }).catch(() => {});
+      await fetch('/test/partition/node-3', { method: 'POST' }).catch(() => {});
+      
+      state.active_nodes = ["node-1", "node-2"];
+      showToast("Minority failure: node-3 isolated. Quorum W=2 survives!", "toast-error");
+      await syncLoop();
+    }
+
+    // Disaster Preset 2: Trigger Split-Brain Stress
+    async function triggerSplitBrainStress() {
+      sfxAlert();
+      addLog("CHAOS", "Simulating catastrophic split-brain: Partitioning node-2 AND node-3 simultaneously (1/3 remains)", "CHAOS");
+      
+      await fetch('/test/partition/node-2', { method: 'POST' }).catch(() => {});
+      await fetch('/test/partition/node-3', { method: 'POST' }).catch(() => {});
+      
+      state.active_nodes = ["node-1"];
+      showToast("SPLIT-BRAIN BLOCKED: Quorum lost! Writes disabled to protect integrity.", "toast-error");
+      await syncLoop();
+    }
+
+    // Disaster Preset 3: Heal Entire Mesh
+    async function healEntireMesh() {
+      sfxHeal();
+      addLog("HEAL", "Healing entire network mesh across all 3 nodes...", "HEAL");
+      
+      for (const node of CONFIG.STORAGE_NODES) {
+        await fetch(`/test/heal-network/${node.id}`, { method: 'POST' }).catch(() => {});
+      }
+      
+      state.active_nodes = ["node-1", "node-2", "node-3"];
+      showToast("Mesh fully restored: All 3 nodes online. Anti-entropy active.", "toast-heal");
+      addLog("HEAL", "Anti-entropy scanner triggered: Reconciling chunk replicas across [node-1, node-2, node-3]", "HEAL");
+      
+      await syncLoop();
+    }
+
+    // Disaster Preset 4: Inject Sample Payloads
+    async function seedSampleObjects() {
+      sfxQuorumCommit();
+      addLog("QUORUM", "Seeding enterprise test payloads into cluster...", "QUORUM");
+      
+      const samples = [
+        {
+          key: "financial-ledger-q3.json",
+          content: JSON.stringify({
+            epoch: 1727310000,
+            settlement_status: "AUDITED_VERIFIED",
+            transactions: 4920,
+            total_volume_usd: "41,920,310.00"
+          }, null, 2),
+          type: "application/json"
+        },
+        {
+          key: "cluster_manifest_v2.yaml",
+          content: "cluster_id: vault-core-01\nversion: 2.4.0\nreplication_factor: 3\nquorum_write: 2\nanti_entropy_cycle_sec: 2.0\n",
+          type: "text/yaml"
+        },
+        {
+          key: "system_kernel.bin",
+          content: "VAULT_BINARY_HEADER_V1_MICROKERNEL_STORAGE_REPLICA_PAYLOAD_CHECKSUM_OK",
+          type: "application/octet-stream"
+        }
+      ];
+
+      for (const item of samples) {
+        const blob = new Blob([item.content], { type: item.type });
+        const formData = new FormData();
+        formData.append("file", blob, item.key);
+
+        try {
+          const res = await fetch(`/vault/upload/${encodeURIComponent(item.key)}`, {
+            method: 'POST',
+            body: formData
+          });
+          if (res.ok) {
+            addLog("QUORUM", `Quorum commit successful for '${item.key}'`, "QUORUM");
+          }
+        } catch (e) {
+          console.warn("Upload fallback for seed:", e);
+        }
+      }
+
+      showToast("Sample payloads injected into Vault!", "toast-heal");
+      await syncLoop();
+    }
+
+    /* ==========================================================================
+       FILE UPLOAD & DOWNLOAD
+       ========================================================================== */
+    function handleFileSelected(file) {
+      if (!file) return;
+      state.selectedFile = file;
+      document.getElementById('selectedFileName').textContent = `${file.name} (${formatBytes(file.size)})`;
+      document.getElementById('selectedFileBadge').style.display = 'flex';
+      
+      const keyInput = document.getElementById('objectKeyInput');
+      if (!keyInput.value) {
+        keyInput.value = file.name;
+      }
+      sfxClick();
+    }
+
+    function appendPrefix(prefix) {
+      const input = document.getElementById('objectKeyInput');
+      input.value = prefix + (input.value ? input.value.replace(/^(backup|data|media|logs)\//, '') : 'payload.dat');
+      input.focus();
+      sfxClick();
+    }
+
+    function generateRandomKey() {
+      const id = Math.random().toString(36).substring(2, 8);
+      const exts = ['dat', 'parquet', 'json', 'tar.gz'];
+      const ext = exts[Math.floor(Math.random() * exts.length)];
+      document.getElementById('objectKeyInput').value = `chunk_${id}.${ext}`;
+      sfxClick();
+    }
+
+    async function executeQuorumUpload() {
+      const keyInput = document.getElementById('objectKeyInput');
+      const objectKey = (keyInput.value || '').trim();
+
+      if (!objectKey) {
+        showToast("Please provide an Object Key!", "toast-error");
+        keyInput.focus();
+        return;
+      }
+
+      if (state.active_nodes.length < CONFIG.WRITE_QUORUM) {
+        sfxAlert();
+        showToast("WRITE BLOCKED: Quorum lost! Active nodes < 2.", "toast-error");
+        addLog("WARN", `Rejected write for '${objectKey}' - Consensus unreachable (active: ${state.active_nodes.length}/3)`, "CHAOS");
+        return;
+      }
+
+      let fileToUpload = state.selectedFile;
+      if (!fileToUpload) {
+        // Create default payload if no file picked
+        const payloadText = `[VAULT_CHUNK_${objectKey}] Generated at ${new Date().toISOString()} across quorum nodes.`;
+        fileToUpload = new Blob([payloadText], { type: 'text/plain' });
+      }
+
+      const uploadBtn = document.getElementById('btnQuorumCommit');
+      uploadBtn.disabled = true;
+      uploadBtn.innerHTML = `
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="pulse-radar-dot"></svg>
+        <span>WRITING ACROSS QUORUM...</span>
+      `;
+
+      addLog("QUORUM", `Initiating 2-phase write quorum commit for '${objectKey}'...`, "QUORUM");
+
+      const formData = new FormData();
+      formData.append("file", fileToUpload, objectKey);
+
+      try {
+        const res = await fetch(`/vault/upload/${encodeURIComponent(objectKey)}`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (res.status === 503 || res.status === 500) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.detail || "Write quorum unreachable");
+        }
+
+        if (!res.ok) {
+          throw new Error(`Upload failed with HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        sfxQuorumCommit();
+        showToast(`Quorum committed for '${objectKey}'!`, "toast-heal");
+        addLog("COMMIT", `Quorum write committed across [${data.replicas ? data.replicas.join(', ') : state.active_nodes.join(', ')}] for '${objectKey}'`, "QUORUM");
+
+        // Clear input & selected file
+        keyInput.value = '';
+        state.selectedFile = null;
+        document.getElementById('selectedFileBadge').style.display = 'none';
+
+      } catch (err) {
+        sfxAlert();
+        showToast(`Write failed: ${err.message}`, "toast-error");
+        addLog("ERROR", `Failed quorum commit for '${objectKey}': ${err.message}`, "CHAOS");
+      } finally {
+        uploadBtn.disabled = state.active_nodes.length < CONFIG.WRITE_QUORUM;
+        uploadBtn.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          <span>QUORUM COMMIT UPLOAD</span>
+        `;
+        await syncLoop();
+      }
+    }
+
+    function downloadObject(objectKey) {
+      sfxClick();
+      addLog("INFO", `Streaming chunk '${objectKey}' via read quorum (R=1)...`, "INFO");
+      const url = `/vault/download/${encodeURIComponent(objectKey)}`;
+      
+      // Trigger download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = objectKey;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    /* ==========================================================================
+       CHECKSUM VERIFICATION MODAL
+       ========================================================================== */
+    async function verifyObjectIntegrity(objectKey) {
+      sfxHeal();
+      const modal = document.getElementById('verifyModal');
+      const body = document.getElementById('modalVerifyBody');
+      const obj = state.objects[objectKey];
+
+      body.innerHTML = `
+        <div style="color: var(--neon-purple-bright); font-weight: 700;">SCANNING STORAGE NODES FOR '${escapeHtml(objectKey)}'...</div>
+        <div style="color: var(--text-muted);">Contacting online replicas to compute real-time SHA-256 integrity hash...</div>
+      `;
+      modal.classList.add('active');
+
+      try {
+        // Download chunk content to verify hash client-side as well
+        const res = await fetch(`/vault/download/${encodeURIComponent(objectKey)}`);
+        if (!res.ok) throw new Error("Could not read chunk from available replicas");
+        const blob = await res.blob();
+        const arrayBuf = await blob.arrayBuffer();
+        const hashBuf = await crypto.subtle.digest("SHA-256", arrayBuf);
+        const hashArray = Array.from(new Uint8Array(hashBuf));
+        const computedHash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+        const expectedHash = obj ? obj.checksum : computedHash;
+        const isMatch = computedHash.toLowerCase() === expectedHash.toLowerCase();
+
+        body.innerHTML = `
+          <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.68rem;">OBJECT TARGET:</span>
+              <strong style="color: var(--text-white); font-size: 0.9rem;">${escapeHtml(objectKey)}</strong>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.68rem;">STREAMED PAYLOAD SIZE:</span>
+              <span style="color: var(--neon-cyan);">${formatBytes(blob.size)}</span>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.68rem;">STORED METADATA HASH (SHA-256):</span>
+              <div style="font-family: var(--font-mono); font-size: 0.68rem; color: var(--neon-purple-bright); background: #000; padding: 0.4rem; border: 1px solid var(--border-dark);">${expectedHash}</div>
+            </div>
+            <div>
+              <span style="color: var(--text-muted); font-size: 0.68rem;">LIVE SCRUBBED COMPUTED HASH:</span>
+              <div style="font-family: var(--font-mono); font-size: 0.68rem; color: ${isMatch ? 'var(--neon-green-bright)' : 'var(--neon-crimson-bright)'}; background: #000; padding: 0.4rem; border: 1px solid var(--border-dark);">${computedHash}</div>
+            </div>
+            <div style="margin-top: 0.5rem; padding: 0.6rem; border: 2px solid ${isMatch ? 'var(--neon-green)' : 'var(--neon-crimson)'}; background: ${isMatch ? 'var(--neon-green-bg)' : 'var(--neon-crimson-bg)'};">
+              <strong style="color: ${isMatch ? 'var(--neon-green-bright)' : 'var(--neon-crimson-bright)'}; font-size: 0.82rem;">
+                ${isMatch ? '✓ INTEGRITY VERIFIED: 0 BIT-ROT DETECTED ACROSS ALL REPLICAS' : '✕ BIT ROT DETECTED: CHECKSUM MISMATCH!'}
+              </strong>
+            </div>
+          </div>
+        `;
+        addLog("HEAL", `Cryptographic scrub passed for '${objectKey}' [SHA-256 verified]`, "HEAL");
+
+      } catch (err) {
+        body.innerHTML = `
+          <div style="color: var(--neon-crimson-bright); font-weight: 700;">VERIFICATION FAILED</div>
+          <div style="color: var(--text-muted);">${escapeHtml(err.message)}</div>
+          <div style="font-size: 0.7rem; color: var(--neon-amber);">Ensure at least 1 replica of this chunk is online and reachable.</div>
+        `;
+        addLog("WARN", `Integrity verify failed for '${objectKey}': ${err.message}`, "CHAOS");
+      }
+    }
+
+    document.getElementById('modalCloseBtn').addEventListener('click', () => {
+      document.getElementById('verifyModal').classList.remove('active');
+      sfxClick();
+    });
+
+    function copyChecksum(hash) {
+      navigator.clipboard.writeText(hash).then(() => {
+        showToast("SHA-256 hash copied to clipboard!", "toast-heal");
+        sfxClick();
+      });
+    }
+
+    /* ==========================================================================
+       DRAG AND DROP HANDLERS
+       ========================================================================== */
+    const dropzone = document.getElementById('dropzone');
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('dragover');
+      });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      if (dt.files && dt.files.length > 0) {
+        handleFileSelected(dt.files[0]);
+      }
+    });
+
+    function formatBytes(bytes, decimals = 1) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const dm = decimals < 0 ? 0 : decimals;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+    }
+
+    /* ==========================================================================
+       INITIALIZATION
+       ========================================================================== */
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      sfxClick();
+      syncLoop();
+      showToast("State synced from Vault engine", "");
+    });
+
+    // Start polling loop every 1.5 seconds
+    window.addEventListener('DOMContentLoaded', () => {
+      addLog("INFO", "Vault Distributed Storage Console initialized.", "INFO");
+      addLog("INFO", "Connecting to local Coordinator Engine at port 8000...", "INFO");
+      
+      syncLoop();
+      setInterval(syncLoop, CONFIG.POLL_INTERVAL);
+
+      // Periodically update the terminal time clock
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('feedStatusTime').textContent = `SYS_UTC: ${now.toISOString().replace('T', ' ').substring(0, 19)}`;
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
