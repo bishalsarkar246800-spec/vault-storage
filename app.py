@@ -4,6 +4,24 @@ from fastapi import FastAPI, File, HTTPException, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import httpx, uvicorn
+import re
+from fastapi import HTTPException
+
+# Security: Path Traversal & Identifier Validation
+def validate_object_id(obj_id: str) -> str:
+    if not re.match(r'^[a-zA-Z0-9_\-\.]+$', obj_id) or '..' in obj_id:
+        raise HTTPException(status_code=400, detail='Invalid identifier: Traversal detected')
+    return obj_id
+# Security: Enforce Security Headers Middleware
+from fastapi import Request
+
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    return response
+
 
 REPLICATION_FACTOR = 3
 WRITE_QUORUM = 2
